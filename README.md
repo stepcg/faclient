@@ -1,8 +1,6 @@
 # FA Client
 An LLDP Fabric Attach capable client for Linux, macOS, and Windows. Note: Windows usage requires the npcap driver be installed (if you use Wireshark, you probably already have this).
 
-HMAC authentication is currently unsupported.
-
 # Usage
 Example command: faclient --assignmentMappings="(10:54320),(11:49920)" --elementType="FA_PROXY" --interfaceId="Eth1" --key="BeSureToDrinkYourOvaltine" --managementVlan=0 --ttl=120
 
