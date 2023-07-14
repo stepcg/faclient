@@ -37,10 +37,10 @@ ttl                = 120
 # Argument handling
 helpText = """FA Client Help.
 
-Example command: faclient --assignmentMappings="(10:54320),(11:49920)" --elementType="FA_PROXY_NOAUTH" --interfaceName="Eth1" --managementVlan=0 --ttl=120
+Example command: faclient --assignmentMappings=(10:54320),(11:49920) --elementType=FA_PROXY_NOAUTH --interfaceName=Eth1 --managementVlan=0 --ttl=120
 
 
-Corresponding short options can be also used: -a="(10:54320),(11:49920)" -e="FA_PROXY_NOAUTH" -i="Eth1" -m=0 -t=120
+Corresponding short options can be also used: -a=(10:54320),(11:49920) -e=FA_PROXY_NOAUTH -i=Eth1 -m=0 -t=120
 
 The only required field is interfaceName. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY_NOAUTH, managementVlan will default to 0 (untagged), and ttl will default to 120
 
@@ -142,7 +142,18 @@ if elementType < 1 or elementType > 15 or not isinstance(elementType, int):
 if mgmtVlan < 0 or mgmtVlan > 4095 or not isinstance(mgmtVlan, int):
 	print("Error: mgmtVlan not in the range of 3-65535 seconds.")
 	exit()
-# assignmentVlans
+if not assignmentMappings == None:
+	vlans = [mgmtVlan]
+	isids = []
+	for assignment in assignmentMappings:
+		vlans.append(assignment[0])
+		isids.append(assignment[1])
+	if len(vlans) != len(set(vlans)):
+		print("Error: Duplicate VLANs. This could include the mgmtVlan.")
+		exit()
+	if len(isids) != len(set(isids)):
+		print("Error: Duplicate ISIDs.")
+		exit()
 
 
 # Definition
