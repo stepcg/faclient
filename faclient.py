@@ -31,7 +31,7 @@ class ElementTypeMap(IntEnum):
 
 assignmentMappings = None
 elementType        = None
-interfaceName      = None
+interfaceId        = None
 key                = None
 mgmtVlan           = 0
 ttl                = 120
@@ -45,7 +45,7 @@ Example command: faclient --assignmentMappings="(10:54320),(11:49920)" --element
 
 Corresponding short options can be also used: --a="(10:54320),(11:49920)" --e="FA_PROXY" --i="Eth1" --k="BeSureToDrinkYourOvaltine" --m=0 --t=120
 
-The only required field is interfaceName. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY/FA_PROXY_NOAUTH, authentication using a key is optional, managementVlan will default to 0 (untagged), and ttl will default to 120
+The only required field is interfaceId. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY/FA_PROXY_NOAUTH, authentication using a key is optional, managementVlan will default to 0 (untagged), and ttl will default to 120
 
 
 assignmentMappings: Comma separated sets of (vlan:isid),(vlan:isid). Valid ranges (1-4095:1-15999999)
@@ -67,7 +67,7 @@ elementType: The numerical element type from 1-15 or the textual names:
 - CLIENT_VSWITCH
 - CLIENT_SERVER
 
-interfaceId: The textual name of the network adapter to use.
+interfaceId: Either textual name of the network adapter to use or the MAC/IPv4 address assigned to it.
 
 key: The key to use for HMAC authentication. If not specificied, authentication will not be performed.
 
@@ -76,7 +76,7 @@ managementVLAN: The management VLAN 0-4095 to register the element with. Typical
 ttl: Time to live, 4-65535. Typically you want this to be 120 seconds. Too long and the entry may time out on the switch before being refreshed.
 """
 shortOptions = "haeikmt"
-longOptions  = ["help", "assignmentMappings=", "elementType=", "interfaceName=", "key=", "managementVlan=", "ttl="]
+longOptions  = ["help", "assignmentMappings=", "elementType=", "interfaceId=", "key=", "managementVlan=", "ttl="]
 
 if len(sys.argv) == 1 or sys.argv[1] == "--" or sys.argv[1] == "-":
 	print(helpText)
@@ -111,8 +111,8 @@ for currentArgument, currentValue in arguments:
 				except:
 					print("Error: Invalid element type.")
 					exit()
-		case "--interfaceName" | "i":
-			interfaceName = currentValue
+		case "--interfaceId" | "i":
+			interfaceId = currentValue
 		case "--key" | "k":
 			key = currentValue.encode("ascii")
 		case "--managementVlan" | "m":
@@ -138,10 +138,16 @@ if elementType == None:
 		elementType = ElementTypeMap.FA_PROXY
 
 # Validation
-deviceMac = get_if_hwaddr(interfaceName)
+deviceMac = get_if_hwaddr(interfaceId)
 if deviceMac == "00:00:00:00:00:00":
-	print("Error: interfaceName doesn't exist.")
-	exit()
+	for iface_id, item in conf.ifaces.items():
+		if item.mac == interfaceId or item.ip == interfaceId:
+			interfaceId=(item.name)
+			break
+	deviceMac = get_if_hwaddr(interfaceId)
+	if deviceMac == "00:00:00:00:00:00":
+		print("Error: interfaceId doesn't exist.")
+		exit()
 
 if ttl < 4 or ttl > 65535 or not isinstance(ttl, int):
 	print("Error: ttl not in the range of 3-65535 seconds.")
@@ -177,7 +183,7 @@ if not assignmentMappings == None:
 # Set some dynamically assigned info
 deviceMacNumber   = int(deviceMac.replace(":", ""), 16)
 hostname          = socket.gethostname()
-mgmtAddress       = get_if_addr(interfaceName)
+mgmtAddress       = get_if_addr(interfaceId)
 mgmtAddressNumber = struct.unpack("!L", socket.inet_aton(mgmtAddress))[0]
 systemDescription = "STEP CG Fabric-Attach Client 2.0"
 
@@ -189,9 +195,9 @@ class Lldp(Packet):
 	               XBitField("chassisIdValue",   deviceMacNumber, 48),
 
 	               XBitField("portTlv",       0x2,                          7),
-	               XBitField("portLength",    len(interfaceName[:255]) + 1, 9),
+	               XBitField("portLength",    len(interfaceId[:255]) + 1, 9),
 	               XBitField("portIdSubType", 5,                            8),
-	               StrField("portIdValue",    interfaceName[:255]),
+	               StrField("portIdValue",    interfaceId[:255]),
 
 	               XBitField("timeToLiveTlv",    0x3, 7),
 	               XBitField("timeToLiveLength", 0x2, 9),
@@ -298,8 +304,8 @@ generatedPacket = generatedPacket/LldpEnd()
 
 # The actual send loop
 # Send once immediately...
-sendp(generatedPacket, iface=interfaceName, verbose=False)
+sendp(generatedPacket, iface=interfaceId, verbose=False)
 # Then send slightly faster than 4 times per ttl
 while True:
 	time.sleep(ttl / 4 - 1)
-	sendp(generatedPacket, iface=interfaceName, verbose=False)
+	sendp(generatedPacket, iface=interfaceId, verbose=False)
