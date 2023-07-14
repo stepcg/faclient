@@ -7,7 +7,7 @@ Example command: faclient --assignmentMappings="(10:54320),(11:49920)" --element
 
 Corresponding short options can be also used: --a="(10:54320),(11:49920)" --e="FA_PROXY" --i="Eth1" --k="BeSureToDrinkYourOvaltine" --m=0 --t=120
 
-The only required field is interfaceName. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY/FA_PROXY_NOAUTH, authentication using a key is optional, managementVlan will default to 0 (untagged), and ttl will default to 120
+The only required field is interfaceId. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY/FA_PROXY_NOAUTH, authentication using a key is optional, managementVlan will default to 0 (untagged), and ttl will default to 120
 
 
 assignmentMappings: Comma separated sets of (vlan:isid),(vlan:isid). Valid ranges (1-4095:1-15999999)
@@ -29,7 +29,7 @@ elementType: The numerical element type from 1-15 or the textual names:
 - CLIENT_VSWITCH
 - CLIENT_SERVER
 
-interfaceId: The textual name of the network adapter to use.
+interfaceId: Either textual name of the network adapter to use or the MAC/IPv4 address assigned to it. The name may not be what you think it is, if it's not working try the MAC "aa:bb:cc:dd:ee:ff" or IP "192.168.1.101" instead.
 
 key: The key to use for HMAC authentication. If not specificied, authentication will not be performed.
 
