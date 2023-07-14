@@ -2,6 +2,7 @@
 from enum import Enum
 from scapy.all import *
 import getopt
+import re
 import socket
 import struct
 import sys
@@ -9,7 +10,6 @@ import time
 
 
 # Initialize key variables
-
 class ElementTypeMap(IntEnum):
 	OTHER            = 1
 	FA_SERVER        = 2
@@ -27,7 +27,7 @@ class ElementTypeMap(IntEnum):
 	CLIENT_VSWITCH   = 14
 	CLIENT_SERVER    = 15
 
-assignmentMappings = [(1,1),(123,954320)]
+assignmentMappings = None
 elementType        = ElementTypeMap.FA_PROXY_NOAUTH
 interfaceName      = None
 mgmtVlan           = 0
@@ -37,15 +37,15 @@ ttl                = 120
 # Argument handling
 helpText = """FA Client Help.
 
-Example command: faclient --assignmentMappings=(10,54320),(11,49920) --elementType=FA_PROXY_NOAUTH --interfaceName=Eth1 --managementVlan=0 --ttl=120
+Example command: faclient --assignmentMappings="(10:54320),(11:49920)" --elementType="FA_PROXY_NOAUTH" --interfaceName="Eth1" --managementVlan=0 --ttl=120
 
 
-Corresponding short options can be also used: -a=(10,54320),(11,49920) -e=FA_PROXY_NOAUTH -i=Eth1 -m=0 -t=120
+Corresponding short options can be also used: -a="(10:54320),(11:49920)" -e="FA_PROXY_NOAUTH" -i="Eth1" -m=0 -t=120
 
 The only required field is interfaceName. assignmentMappings are optional additional VLAN requests, elementType will default to FA_PROXY_NOAUTH, managementVlan will default to 0 (untagged), and ttl will default to 120
 
 
-assignmentMappings: Comma separated pairs of (vlan, isid). Valid ranges (1-4095, 1-15999999)
+assignmentMappings: Comma separated sets of (vlan:isid),(vlan:isid). Valid ranges (1-4095:1-15999999)
 
 elementType: The numerical element type from 1-15 or the textual names:
 - OTHER
@@ -85,7 +85,18 @@ except:
 for currentArgument, currentValue in arguments:
 	match currentArgument:
 		case "--assignmentMappings" | "-a":
-			print("todo: assignmentMappings")
+			# Check that the mappings are of the form (vlan:isid) with optional chainings of ,(vlan:isid)
+			pattern = re.compile("^(\(([1-9]|[1-9]\d{1,2}|[1-3]\d{3}|40[0-8]\d|409[0-5]):([1-9]|[1-9]\d{1,6}|1[0-5]\d{6})\))(,\(([1-9]|[1-9]\d{1,2}|[1-3]\d{3}|40[0-8]\d|409[0-5]):([1-9]|[1-9]\d{1,6}|1[0-5]\d{6})\))*$")
+			if not pattern.match(currentValue):
+				print("Error: Invalid assignmentMappings list.")
+				exit()
+			else:
+				# Since we know the mappings are in a valid format we can split them into an array and convert them to the internal format
+				assignmentMappings = []
+				assignmentStrings = currentValue.split(",")
+				for assignment in assignmentStrings:
+					pair = assignment.replace("(","").replace(")","").split(":")
+					assignmentMappings.append((int(pair[0]), int(pair[1])))
 		case "--elementType" | "-e":
 			if currentValue.isnumeric():
 				elementType = int(currentValue)
