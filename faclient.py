@@ -74,12 +74,12 @@ shortOptions = "haeimt"
 longOptions  = ["help", "assignmentMappings=", "elementType=", "interfaceName=", "managementVlan=", "ttl="]
 
 if len(sys.argv) == 1 or sys.argv[1] == "--" or sys.argv[1] == "-":
-	print("help text A")
+	print(helpText)
 	exit()
 try:
 	arguments, values = getopt.getopt(sys.argv[1:], shortOptions, longOptions)
 except:
-	print("help text b")
+	print(helpText)
 	exit()
 # Process matching arguments
 for currentArgument, currentValue in arguments:
